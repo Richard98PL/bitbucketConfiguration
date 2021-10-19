@@ -1,0 +1,39 @@
+bitbucket repoistory settings -> variables
+- username
+- customerKey
+
+Connected App must have a certificate that is stored in repo as server.key
+
+We need bitbucket-pipelines.yml file in repo 
+example configuration:
+
+# This is an example Starter pipeline configuration
+# Use a skeleton to build, test and deploy using manual and parallel steps
+# -----
+# You can specify a custom docker image from Docker Hub as your build environment.
+image: bartlomiejmatyjaszczyk/gcdocker
+
+pipelines:
+  branches:
+    YIT-*:
+      - parallel:
+          - step:
+              name: Validate DEVGENUS1
+              script:
+                - sfdx force:auth:jwt:grant -u $TEST_USERNAME --jwtkeyfile certs/server.key -i $TEST_CUSTOMER_KEY -s -a YitTest -r https://test.salesforce.com
+                - sfdx force:mdapi:deploy -d src -u YitTest -w 100 -c -l RunLocalTests
+          - step:
+              name: Validate UAT
+              script:
+                - sfdx force:auth:jwt:grant -u $UAT_USERNAME --jwtkeyfile certs/server.key -i $UAT_CUSTOMER_KEY -s -a YitUAT -r https://test.salesforce.com
+                - sfdx force:mdapi:deploy -d src -u YitUAT -w 100 -c -l RunLocalTests
+          - step:
+              name: Validate DEVINT
+              script:
+                - sfdx force:auth:jwt:grant -u $DEVINT_USERNAME --jwtkeyfile certs/server.key -i $DEVINT_CUSTOMER_KEY -s -a YitDEVINT -r https://test.salesforce.com
+                - sfdx force:mdapi:deploy -d src -u YitDEVINT -w 100 -c -l RunLocalTests
+          - step:
+              name: Run Apex Tests PROD
+              script:
+                - sfdx force:auth:jwt:grant -u $PROD_USERNAME --jwtkeyfile certs/server.key -i $PROD_CUSTOMER_KEY -s -a YitProd -r https://login.salesforce.com
+                - sfdx force:mdapi:deploy -d src -u YitProd -w 100 -c -l RunLocalTests
